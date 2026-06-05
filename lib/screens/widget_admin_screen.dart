@@ -4,7 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/dashboard_widget.dart';
 import '../theme/colors.dart';
 import '../widgets/add_entry_sheet.dart';
+import '../widgets/create_dash_widget_sheet.dart';
 import '../widgets/create_widget_sheet.dart';
+import '../widgets/edit_dash_data_sheet.dart';
 import '../widgets/edit_entry_sheet.dart';
 import '../widgets/edit_widget_sheet.dart';
 import '../widgets/shared_components.dart';
@@ -106,6 +108,31 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
       builder: (_) => const CreateWidgetSheet(),
     );
     if (result != null) setState(() => _widgets.add(result));
+  }
+
+  void _openCreateDashWidget() async {
+    final result = await showModalBottomSheet<DashboardWidget>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const CreateDashWidgetSheet(),
+    );
+    if (result != null) setState(() => _widgets.add(result));
+  }
+
+  void _openEditDashData(DashboardWidget w) async {
+    final updated = await showModalBottomSheet<DashboardWidget>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => EditDashDataSheet(dashboardWidget: w),
+    );
+    if (updated != null) {
+      setState(() {
+        final idx = _widgets.indexWhere((x) => x.id == updated.id);
+        if (idx != -1) _widgets[idx] = updated;
+      });
+    }
   }
 
   void _openAddEntry(DashboardWidget w) async {
@@ -338,17 +365,24 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
                           padding:
                               const EdgeInsets.fromLTRB(16, 4, 16, 100),
                           itemCount: filtered.length,
-                          itemBuilder: (ctx, i) => WidgetCard(
-                            key: ValueKey(filtered[i].id),
-                            widget_: filtered[i],
-                            index: i,
-                            onAddEntry: () => _openAddEntry(filtered[i]),
-                            onEditEntries: () =>
-                                _openEditEntries(filtered[i]),
-                            onEditWidget: () =>
-                                _openEditWidget(filtered[i]),
-                            onDelete: () => _deleteWidget(filtered[i]),
-                          ),
+                          itemBuilder: (ctx, i) {
+                            final w = filtered[i];
+                            return WidgetCard(
+                              key: ValueKey(w.id),
+                              widget_: w,
+                              index: i,
+                              onAddEntry: w.isDashWidget
+                                  ? () => _openEditDashData(w)
+                                  : () => _openAddEntry(w),
+                              onEditEntries: w.isDashWidget
+                                  ? (w.history.isNotEmpty
+                                      ? () => _openEditEntries(w)
+                                      : () => _openAddEntry(w))
+                                  : () => _openEditEntries(w),
+                              onEditWidget: () => _openEditWidget(w),
+                              onDelete: () => _deleteWidget(w),
+                            );
+                          },
                         ),
             ),
           ],
@@ -565,7 +599,7 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
       );
 
   Widget _buildFab() => FloatingActionButton.extended(
-        onPressed: _openCreate,
+        onPressed: _tabController.index == 0 ? _openCreate : _openCreateDashWidget,
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.bg,
         elevation: 0,

@@ -42,6 +42,12 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   final List<TextEditingController> _lbNames = [TextEditingController()];
   final List<TextEditingController> _lbScores = [TextEditingController()];
 
+  // Dashboard widget entry fields
+  final List<TextEditingController> _dashMetricTitles = [TextEditingController()];
+  final List<TextEditingController> _dashMetricValues = [TextEditingController()];
+  final List<TextEditingController> _dashTextListItems = [];
+  final _dashGlobalProgressCtrl = TextEditingController(text: '0.0');
+
   @override
   void dispose() {
     _dateCtrl.dispose();
@@ -54,10 +60,14 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
       ..._infoNames,
       ..._infoValues,
       ..._lbNames,
-      ..._lbScores
+      ..._lbScores,
+      ..._dashMetricTitles,
+      ..._dashMetricValues,
+      ..._dashTextListItems,
     ]) {
       c.dispose();
     }
+    _dashGlobalProgressCtrl.dispose();
     super.dispose();
   }
 
@@ -68,48 +78,72 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
 
     try {
       dynamic entry;
-      switch (widget.dashboardWidget.type) {
-        case WidgetType.kpi:
-          entry = {
-            'trend': _kpiTrendUp ? 'up' : 'down',
-            'value': num.tryParse(_kpiValueCtrl.text.trim()) ?? 0,
-            'change': num.tryParse(_kpiChangeCtrl.text.trim()) ?? 0,
-            if (_kpiPrefixCtrl.text.trim().isNotEmpty)
-              'prefix': _kpiPrefixCtrl.text.trim(),
-          };
 
-        case WidgetType.chart:
-          entry = {
-            'labels': _chartLabelsCtrl.text
-                .split(',')
-                .map((s) => s.trim())
-                .where((s) => s.isNotEmpty)
-                .toList(),
-            'values': _chartValuesCtrl.text
-                .split(',')
-                .map((s) => num.tryParse(s.trim()) ?? 0)
-                .toList(),
-          };
+      if (widget.dashboardWidget.isDashWidget) {
+        // Build dashboard entry
+        final metrics = <Map<String, dynamic>>[];
+        for (int i = 0; i < _dashMetricTitles.length; i++) {
+          final title = _dashMetricTitles[i].text.trim();
+          final value = _dashMetricValues[i].text.trim();
+          if (title.isNotEmpty || value.isNotEmpty) {
+            metrics.add({'title': title, 'value': value});
+          }
+        }
+        entry = <String, dynamic>{'metrics': metrics};
 
-        case WidgetType.infoChart:
-          entry = List.generate(
-            _infoNames.length,
-            (i) => {
-              'name': _infoNames[i].text.trim(),
-              'value': num.tryParse(_infoValues[i].text.trim()) ?? 0,
-            },
-          );
+        final category = widget.dashboardWidget.category;
+        if (category == DashboardCategory.pipelineProgress) {
+          entry['global_progress'] =
+              double.tryParse(_dashGlobalProgressCtrl.text.trim()) ?? 0.0;
+          entry['text_list_items'] = _dashTextListItems
+              .map((c) => c.text.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
+        }
+      } else {
+        switch (widget.dashboardWidget.type) {
+          case WidgetType.kpi:
+            entry = {
+              'trend': _kpiTrendUp ? 'up' : 'down',
+              'value': num.tryParse(_kpiValueCtrl.text.trim()) ?? 0,
+              'change': num.tryParse(_kpiChangeCtrl.text.trim()) ?? 0,
+              if (_kpiPrefixCtrl.text.trim().isNotEmpty)
+                'prefix': _kpiPrefixCtrl.text.trim(),
+            };
 
-        case WidgetType.leaderBoard:
-          final leaders = List.generate(
-            _lbNames.length,
-            (i) => {
-              'name': _lbNames[i].text.trim(),
-              'score': num.tryParse(_lbScores[i].text.trim()) ?? 0,
-            },
-          )..sort(
-              (a, b) => (b['score'] as num).compareTo(a['score'] as num));
-          entry = {'leaders': leaders};
+          case WidgetType.chart:
+            entry = {
+              'labels': _chartLabelsCtrl.text
+                  .split(',')
+                  .map((s) => s.trim())
+                  .where((s) => s.isNotEmpty)
+                  .toList(),
+              'values': _chartValuesCtrl.text
+                  .split(',')
+                  .map((s) => num.tryParse(s.trim()) ?? 0)
+                  .toList(),
+            };
+
+          case WidgetType.infoChart:
+            entry = List.generate(
+              _infoNames.length,
+              (i) => {
+                'name': _infoNames[i].text.trim(),
+                'value': num.tryParse(_infoValues[i].text.trim()) ?? 0,
+              },
+            );
+
+          case WidgetType.leaderBoard:
+            final leaders = List.generate(
+              _lbNames.length,
+              (i) => {
+                'name': _lbNames[i].text.trim(),
+                'score': num.tryParse(_lbScores[i].text.trim()) ?? 0,
+              },
+            )..sort(
+                (a, b) => (b['score'] as num).compareTo(a['score'] as num));
+            entry = {'leaders': leaders};
+        }
       }
 
       final newHistory =
@@ -184,6 +218,11 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   }
 
   List<Widget> _buildTypeFields(WidgetType type) {
+    // Dashboard widget entry fields
+    if (widget.dashboardWidget.isDashWidget) {
+      return _buildDashEntryFields();
+    }
+
     switch (type) {
       case WidgetType.kpi:
         return [
@@ -379,5 +418,106 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
         ];
     }
+  }
+
+  List<Widget> _buildDashEntryFields() {
+    final category = widget.dashboardWidget.category;
+    return [
+      Row(children: [
+        const SheetLabel('Metrics'),
+        const Spacer(),
+        GestureDetector(
+          onTap: () => setState(() {
+            _dashMetricTitles.add(TextEditingController());
+            _dashMetricValues.add(TextEditingController());
+          }),
+          child: const Icon(Icons.add_circle_rounded,
+              color: AppColors.accent, size: 20),
+        ),
+      ]),
+      const SizedBox(height: 8),
+      ...List.generate(
+        _dashMetricTitles.length,
+        (i) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(children: [
+            Expanded(
+                flex: 3,
+                child: SheetField(
+                    controller: _dashMetricTitles[i],
+                    hint: 'Title',
+                    icon: Icons.label_outline_rounded)),
+            const SizedBox(width: 8),
+            Expanded(
+                flex: 2,
+                child: SheetField(
+                    controller: _dashMetricValues[i],
+                    hint: 'Value',
+                    icon: Icons.numbers_rounded)),
+            if (_dashMetricTitles.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    _dashMetricTitles[i].dispose();
+                    _dashMetricValues[i].dispose();
+                    _dashMetricTitles.removeAt(i);
+                    _dashMetricValues.removeAt(i);
+                  }),
+                  child: const Icon(Icons.remove_circle_rounded,
+                      color: AppColors.danger, size: 20),
+                ),
+              ),
+          ]),
+        ),
+      ),
+      if (category == DashboardCategory.pipelineProgress) ...[
+        const SizedBox(height: 16),
+        const SheetLabel('Global Progress (0.0 - 1.0)'),
+        const SizedBox(height: 8),
+        SheetField(
+            controller: _dashGlobalProgressCtrl,
+            hint: '0.0 - 1.0',
+            icon: Icons.linear_scale_rounded,
+            keyboardType: TextInputType.number),
+        const SizedBox(height: 16),
+        Row(children: [
+          const SheetLabel('Text List Items'),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => setState(() {
+              _dashTextListItems.add(TextEditingController());
+            }),
+            child: const Icon(Icons.add_circle_rounded,
+                color: AppColors.accent, size: 20),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        ...List.generate(
+          _dashTextListItems.length,
+          (i) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [
+              Expanded(
+                  child: SheetField(
+                      controller: _dashTextListItems[i],
+                      hint: 'Item ${i + 1}',
+                      icon: Icons.short_text_rounded)),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    _dashTextListItems[i].dispose();
+                    _dashTextListItems.removeAt(i);
+                  }),
+                  child: const Icon(Icons.remove_circle_rounded,
+                      color: AppColors.danger, size: 20),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ],
+    ];
   }
 }
