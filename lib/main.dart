@@ -11,6 +11,11 @@ void main() async {
     anonKey: 'sb_publishable_UbdD-Va_neXP7idDGp9ILA_gB1X7Dhf',
   );
 
+  await Supabase.instance.client.auth.signInWithPassword(
+    email: 'araranonymous9@gmail.com',
+    password: 'password',
+  );
+
   runApp(const MyApp());
 }
 
@@ -19,10 +24,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Supabase.instance.client.auth.signInWithPassword(
-      email: 'araranonymous9@gmail.com',
-      password: 'password',
-    );
     return MaterialApp(
       title: 'Client Portal Admin',
       debugShowCheckedModeBanner: false,

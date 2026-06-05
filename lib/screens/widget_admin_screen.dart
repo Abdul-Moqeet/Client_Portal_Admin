@@ -210,6 +210,23 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
               .eq('id', widget_.id);
         } catch (e) {
           debugPrint('Failed to delete from Supabase: $e');
+          // Re-insert the widget into the local list since the remote delete failed
+          if (mounted) {
+            setState(() {
+              if (deletedIndex >= 0 && deletedIndex <= _widgets.length) {
+                _widgets.insert(deletedIndex, deletedWidget);
+              } else {
+                _widgets.add(deletedWidget);
+              }
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to delete widget. It has been restored.'),
+                backgroundColor: AppColors.danger,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
       }
     });
@@ -237,6 +254,15 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
       }
     } catch (e) {
       debugPrint('Failed to persist positions: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save widget positions. Please try reordering again.'),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
