@@ -53,6 +53,8 @@ class _EditEntrySheetState extends State<EditEntrySheet> {
   List<TextEditingController> _dashMetricValues = [];
   List<TextEditingController> _dashTextListItems = [];
   final _dashGlobalProgressCtrl = TextEditingController();
+  final _dashSubtitleCtrl = TextEditingController();
+  final _dashTrailingTextCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -84,6 +86,8 @@ class _EditEntrySheetState extends State<EditEntrySheet> {
       c.dispose();
     }
     _dashGlobalProgressCtrl.dispose();
+    _dashSubtitleCtrl.dispose();
+    _dashTrailingTextCtrl.dispose();
     super.dispose();
   }
 
@@ -121,6 +125,9 @@ class _EditEntrySheetState extends State<EditEntrySheet> {
 
         _dashGlobalProgressCtrl.text =
             entry['global_progress']?.toString() ?? '0.0';
+
+        _dashSubtitleCtrl.text = entry['subtitle']?.toString() ?? '';
+        _dashTrailingTextCtrl.text = entry['trailing_text']?.toString() ?? '';
       }
 
       if (_dashMetricTitles.isEmpty) {
@@ -262,6 +269,16 @@ class _EditEntrySheetState extends State<EditEntrySheet> {
               .map((c) => c.text.trim())
               .where((s) => s.isNotEmpty)
               .toList();
+        } else if (category == DashboardCategory.userSentiment) {
+          entry['subtitle'] = _dashSubtitleCtrl.text.trim();
+          entry['text_list_items'] = _dashTextListItems
+              .map((c) => c.text.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
+        } else if (category == DashboardCategory.coreVitalsRadar) {
+          entry['subtitle'] = _dashSubtitleCtrl.text.trim();
+        } else if (category == DashboardCategory.appStoreStatus) {
+          entry['trailing_text'] = _dashTrailingTextCtrl.text.trim();
         }
       } else {
         switch (widget.dashboardWidget.type) {
@@ -369,46 +386,7 @@ class _EditEntrySheetState extends State<EditEntrySheet> {
         .eq('id', widget.dashboardWidget.id);
   }
 
-  String _summarise(dynamic value) {
-    if (value is Map) {
-      final m = Map<String, dynamic>.from(value);
-      if (m.containsKey('value')) {
-        final v = m['value'];
-        if (m.containsKey('trend')) {
-          final trend = m['trend']?.toString() ?? '';
-          final icon = trend == 'up' ? '\u2191' : trend == 'down' ? '\u2193' : '\u2192';
-          return '$v ($icon $trend)';
-        }
-        if (m.containsKey('unit')) {
-          return '$v ${m['unit']}';
-        }
-        if (m.containsKey('item')) {
-          return '${m['item']}: \$$v (x${m['purchases'] ?? 0})';
-        }
-        if (m.containsKey('low') || m.containsKey('critical') || m.containsKey('resolved')) {
-          return '$v total | L:${m['low'] ?? 0} C:${m['critical'] ?? 0} R:${m['resolved'] ?? 0}';
-        }
-        return '$v';
-      }
-      if (m.containsKey('values')) {
-        return 'Values: ${(m['values'] as List?)?.join(', ') ?? ''}';
-      }
-      if (m.containsKey('leaders')) {
-        final leaders = m['leaders'] as List? ?? [];
-        return leaders
-            .take(2)
-            .map((l) => '${l['name']} ${l['score']}')
-            .join(', ');
-      }
-    }
-    if (value is List) {
-      return value
-          .take(3)
-          .map((v) => '${v['name']}: ${v['value']}')
-          .join(', ');
-    }
-    return value.toString();
-  }
+  String _summarise(dynamic value) => summariseEntry(value);
 
   @override
   Widget build(BuildContext context) {
@@ -918,6 +896,70 @@ class _EditEntrySheetState extends State<EditEntrySheet> {
             ]),
           ),
         ),
+      ],
+      if (category == DashboardCategory.userSentiment) ...[
+        const SizedBox(height: 10),
+        const SheetLabel('Subtitle'),
+        const SizedBox(height: 6),
+        SheetField(
+            controller: _dashSubtitleCtrl,
+            hint: 'e.g. User feedback summary',
+            icon: Icons.subtitles_rounded),
+        const SizedBox(height: 10),
+        Row(children: [
+          const SheetLabel('Text List Items'),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => setState(() {
+              _dashTextListItems.add(TextEditingController());
+            }),
+            child: const Icon(Icons.add_circle_rounded,
+                color: AppColors.accent, size: 18),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        ...List.generate(
+          _dashTextListItems.length,
+          (i) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(children: [
+              Expanded(
+                  child: SheetField(
+                      controller: _dashTextListItems[i],
+                      hint: 'Item ${i + 1}',
+                      icon: Icons.short_text_rounded)),
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    _dashTextListItems[i].dispose();
+                    _dashTextListItems.removeAt(i);
+                  }),
+                  child: const Icon(Icons.remove_circle_rounded,
+                      color: AppColors.danger, size: 18),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ],
+      if (category == DashboardCategory.coreVitalsRadar) ...[
+        const SizedBox(height: 10),
+        const SheetLabel('Subtitle'),
+        const SizedBox(height: 6),
+        SheetField(
+            controller: _dashSubtitleCtrl,
+            hint: 'e.g. Last 30 days',
+            icon: Icons.subtitles_rounded),
+      ],
+      if (category == DashboardCategory.appStoreStatus) ...[
+        const SizedBox(height: 10),
+        const SheetLabel('Trailing Text'),
+        const SizedBox(height: 6),
+        SheetField(
+            controller: _dashTrailingTextCtrl,
+            hint: 'e.g. v2.1.0 - Released',
+            icon: Icons.text_fields_rounded),
       ],
     ];
   }

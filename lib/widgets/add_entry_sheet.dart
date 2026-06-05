@@ -52,6 +52,8 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   final List<TextEditingController> _dashMetricValues = [TextEditingController()];
   final List<TextEditingController> _dashTextListItems = [];
   final _dashGlobalProgressCtrl = TextEditingController(text: '0.0');
+  final _dashSubtitleCtrl = TextEditingController();
+  final _dashTrailingTextCtrl = TextEditingController();
 
   @override
   void dispose() {
@@ -77,6 +79,8 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
       c.dispose();
     }
     _dashGlobalProgressCtrl.dispose();
+    _dashSubtitleCtrl.dispose();
+    _dashTrailingTextCtrl.dispose();
     super.dispose();
   }
 
@@ -108,6 +112,16 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               .map((c) => c.text.trim())
               .where((s) => s.isNotEmpty)
               .toList();
+        } else if (category == DashboardCategory.userSentiment) {
+          entry['subtitle'] = _dashSubtitleCtrl.text.trim();
+          entry['text_list_items'] = _dashTextListItems
+              .map((c) => c.text.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
+        } else if (category == DashboardCategory.coreVitalsRadar) {
+          entry['subtitle'] = _dashSubtitleCtrl.text.trim();
+        } else if (category == DashboardCategory.appStoreStatus) {
+          entry['trailing_text'] = _dashTrailingTextCtrl.text.trim();
         }
       } else {
         switch (widget.dashboardWidget.type) {
@@ -196,14 +210,9 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
           })
           .eq('id', widget.dashboardWidget.id);
 
-      final updated = DashboardWidget(
-        id: widget.dashboardWidget.id,
-        type: widget.dashboardWidget.type,
-        title: widget.dashboardWidget.title,
+      final updated = widget.dashboardWidget.copyWith(
         data: updatedData,
         history: newHistory,
-        colspan: widget.dashboardWidget.colspan,
-        position: widget.dashboardWidget.position,
       );
 
       if (mounted) Navigator.pop(context, updated);
@@ -648,6 +657,70 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
             ]),
           ),
         ),
+      ],
+      if (category == DashboardCategory.userSentiment) ...[
+        const SizedBox(height: 16),
+        const SheetLabel('Subtitle'),
+        const SizedBox(height: 8),
+        SheetField(
+            controller: _dashSubtitleCtrl,
+            hint: 'e.g. User feedback summary',
+            icon: Icons.subtitles_rounded),
+        const SizedBox(height: 16),
+        Row(children: [
+          const SheetLabel('Text List Items'),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => setState(() {
+              _dashTextListItems.add(TextEditingController());
+            }),
+            child: const Icon(Icons.add_circle_rounded,
+                color: AppColors.accent, size: 20),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        ...List.generate(
+          _dashTextListItems.length,
+          (i) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [
+              Expanded(
+                  child: SheetField(
+                      controller: _dashTextListItems[i],
+                      hint: 'Item ${i + 1}',
+                      icon: Icons.short_text_rounded)),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    _dashTextListItems[i].dispose();
+                    _dashTextListItems.removeAt(i);
+                  }),
+                  child: const Icon(Icons.remove_circle_rounded,
+                      color: AppColors.danger, size: 20),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ],
+      if (category == DashboardCategory.coreVitalsRadar) ...[
+        const SizedBox(height: 16),
+        const SheetLabel('Subtitle'),
+        const SizedBox(height: 8),
+        SheetField(
+            controller: _dashSubtitleCtrl,
+            hint: 'e.g. Last 30 days',
+            icon: Icons.subtitles_rounded),
+      ],
+      if (category == DashboardCategory.appStoreStatus) ...[
+        const SizedBox(height: 16),
+        const SheetLabel('Trailing Text'),
+        const SizedBox(height: 8),
+        SheetField(
+            controller: _dashTrailingTextCtrl,
+            hint: 'e.g. v2.1.0 - Released',
+            icon: Icons.text_fields_rounded),
       ],
     ];
   }

@@ -4,6 +4,62 @@ import '../theme/colors.dart';
 import '../models/dashboard_widget.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  SHARED UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Summarises a history entry value into a short displayable string.
+String summariseEntry(dynamic value) {
+  if (value is Map) {
+    final m = Map<String, dynamic>.from(value);
+    if (m.containsKey('value')) {
+      final v = m['value'];
+      if (m.containsKey('trend')) {
+        final trend = m['trend']?.toString() ?? '';
+        final icon =
+            trend == 'up' ? '\u2191' : trend == 'down' ? '\u2193' : '\u2192';
+        return '$v $icon';
+      }
+      if (m.containsKey('unit')) {
+        return '$v ${m['unit']}';
+      }
+      if (m.containsKey('item')) {
+        return '${m['item']}: \$$v (x${m['purchases'] ?? 0})';
+      }
+      if (m.containsKey('low') ||
+          m.containsKey('critical') ||
+          m.containsKey('resolved')) {
+        return '$v total | L:${m['low'] ?? 0} C:${m['critical'] ?? 0} R:${m['resolved'] ?? 0}';
+      }
+      return '$v';
+    }
+    if (m.containsKey('values')) {
+      return 'Values: ${(m['values'] as List?)?.join(', ') ?? ''}';
+    }
+    if (m.containsKey('leaders')) {
+      final leaders = m['leaders'] as List? ?? [];
+      return leaders
+          .take(2)
+          .map((l) => '${l['name']} ${l['score']}')
+          .join(' | ');
+    }
+    if (m.containsKey('metrics')) {
+      final metrics = m['metrics'] as List? ?? [];
+      return metrics
+          .take(2)
+          .map((mt) => '${mt['title']}: ${mt['value']}')
+          .join(', ');
+    }
+  }
+  if (value is List) {
+    return value
+        .take(3)
+        .map((v) => '${v['name']}: ${v['value']}')
+        .join(' | ');
+  }
+  return value.toString();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  SHARED SHEET SHELL
 // ═══════════════════════════════════════════════════════════════════════════
 
