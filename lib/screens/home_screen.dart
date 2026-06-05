@@ -164,12 +164,15 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
   Widget _buildContent() {
+    final historyWidgets = _widgets.where((w) => !w.isDashWidget).toList();
+    final dashWidgets = _widgets.where((w) => w.isDashWidget).toList();
+
     final counts = <WidgetType, int>{};
-    for (final w in _widgets) {
+    for (final w in historyWidgets) {
       counts[w.type] = (counts[w.type] ?? 0) + 1;
     }
 
-    // Find recently updated widgets
+    // Find recently updated widgets (include all)
     final recent = [..._widgets]
       ..sort((a, b) => b.latestDate.compareTo(a.latestDate));
     final recentWidgets = recent.take(5).toList();
@@ -186,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 18,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
-          _buildSummaryGrid(counts),
+          _buildSummaryGrid(counts, dashWidgets.length),
           const SizedBox(height: 24),
 
           // Manage Widgets card
@@ -210,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSummaryGrid(Map<WidgetType, int> counts) {
+  Widget _buildSummaryGrid(Map<WidgetType, int> counts, int dashCount) {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -226,6 +229,12 @@ class _HomeScreenState extends State<HomeScreen> {
           _widgets.fold<int>(0, (sum, w) => sum + w.entryCount).toString(),
           Icons.data_array_rounded,
           AppColors.success,
+        ),
+        _buildStatCard(
+          'Dashboard',
+          dashCount.toString(),
+          Icons.dashboard_customize_rounded,
+          const Color(0xFF7C4DFF),
         ),
         ...WidgetType.values.map((t) => _buildStatCard(
               t.label,
@@ -331,48 +340,54 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  Widget _buildRecentTile(DashboardWidget w) => Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Icon(w.type.icon, color: w.type.color, size: 18),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(w.title,
-                      style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
-                  Text('${w.entryCount} entries - Latest: ${w.latestDate}',
-                      style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 11)),
-                ],
-              ),
+  Widget _buildRecentTile(DashboardWidget w) {
+    final subtitle = w.isDashWidget
+        ? '${w.metrics.length} metrics${w.category != null ? ' - ${w.category!.label}' : ''}'
+        : '${w.entryCount} entries - Latest: ${w.latestDate}';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(w.type.icon, color: w.type.color, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(w.title,
+                    style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+                Text(subtitle,
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 11)),
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: w.type.color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(w.type.label,
-                  style: TextStyle(
-                      color: w.type.color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: w.type.color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
             ),
-          ],
-        ),
-      );
+            child: Text(w.type.label,
+                style: TextStyle(
+                    color: w.type.color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildEmptyState() => Center(
         child: Padding(

@@ -4,7 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/dashboard_widget.dart';
 import '../theme/colors.dart';
 import '../widgets/add_entry_sheet.dart';
+import '../widgets/create_dash_widget_sheet.dart';
 import '../widgets/create_widget_sheet.dart';
+import '../widgets/edit_dash_data_sheet.dart';
 import '../widgets/edit_entry_sheet.dart';
 import '../widgets/edit_widget_sheet.dart';
 import '../widgets/shared_components.dart';
@@ -32,7 +34,7 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
   bool _reorderMode = false;
-  late AnimationController _ctrl;
+  late TabController _tabController;
 
   @override
   void initState() {
@@ -41,9 +43,12 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
         .map(DashboardWidget.fromJson)
         .toList()
       ..sort((a, b) => a.position.compareTo(b.position));
-    _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500))
-      ..forward();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
     _searchCtrl.addListener(() {
       setState(() => _searchQuery = _searchCtrl.text.toLowerCase().trim());
     });
@@ -51,13 +56,22 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _tabController.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  List<DashboardWidget> get _historyWidgets =>
+      _widgets.where((w) => !w.isDashWidget).toList();
+
+  List<DashboardWidget> get _dashboardWidgets =>
+      _widgets.where((w) => w.isDashWidget).toList();
+
+  List<DashboardWidget> get _activeWidgets =>
+      _tabController.index == 0 ? _historyWidgets : _dashboardWidgets;
+
   List<DashboardWidget> get _filtered {
-    var list = _widgets.toList();
+    var list = _activeWidgets;
 
     // Apply type filter
     if (_filterType != null) {
@@ -94,6 +108,31 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
       builder: (_) => const CreateWidgetSheet(),
     );
     if (result != null) setState(() => _widgets.add(result));
+  }
+
+  void _openCreateDashWidget() async {
+    final result = await showModalBottomSheet<DashboardWidget>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const CreateDashWidgetSheet(),
+    );
+    if (result != null) setState(() => _widgets.add(result));
+  }
+
+  void _openEditDashData(DashboardWidget w) async {
+    final updated = await showModalBottomSheet<DashboardWidget>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => EditDashDataSheet(dashboardWidget: w),
+    );
+    if (updated != null) {
+      setState(() {
+        final idx = _widgets.indexWhere((x) => x.id == updated.id);
+        if (idx != -1) _widgets[idx] = updated;
+      });
+    }
   }
 
   void _openAddEntry(DashboardWidget w) async {
@@ -294,6 +333,20 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
             tooltip: _reorderMode ? 'Done reordering' : 'Reorder',
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.accent,
+          labelColor: AppColors.accent,
+          unselectedLabelColor: AppColors.textSecondary,
+          labelStyle: const TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w700),
+          unselectedLabelStyle: const TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w600),
+          tabs: const [
+            Tab(text: 'History Widgets'),
+            Tab(text: 'Dashboard Widgets'),
+          ],
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -312,17 +365,24 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
                           padding:
                               const EdgeInsets.fromLTRB(16, 4, 16, 100),
                           itemCount: filtered.length,
-                          itemBuilder: (ctx, i) => WidgetCard(
-                            key: ValueKey(filtered[i].id),
-                            widget_: filtered[i],
-                            index: i,
-                            onAddEntry: () => _openAddEntry(filtered[i]),
-                            onEditEntries: () =>
-                                _openEditEntries(filtered[i]),
-                            onEditWidget: () =>
-                                _openEditWidget(filtered[i]),
-                            onDelete: () => _deleteWidget(filtered[i]),
-                          ),
+                          itemBuilder: (ctx, i) {
+                            final w = filtered[i];
+                            return WidgetCard(
+                              key: ValueKey(w.id),
+                              widget_: w,
+                              index: i,
+                              onAddEntry: w.isDashWidget
+                                  ? () => _openEditDashData(w)
+                                  : () => _openAddEntry(w),
+                              onEditEntries: w.isDashWidget
+                                  ? (w.history.isNotEmpty
+                                      ? () => _openEditEntries(w)
+                                      : () => _openAddEntry(w))
+                                  : () => _openEditEntries(w),
+                              onEditWidget: () => _openEditWidget(w),
+                              onDelete: () => _deleteWidget(w),
+                            );
+                          },
                         ),
             ),
           ],
@@ -369,8 +429,9 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
       );
 
   Widget _buildStats() {
+    final activeList = _activeWidgets;
     final counts = <WidgetType, int>{};
-    for (final w in _widgets) {
+    for (final w in activeList) {
       counts[w.type] = (counts[w.type] ?? 0) + 1;
     }
     return Padding(
@@ -381,7 +442,7 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
           children: [
             MiniStat(
                 label: 'Total',
-                value: _widgets.length.toString(),
+                value: activeList.length.toString(),
                 color: AppColors.accent),
             const SizedBox(width: 8),
             ...WidgetType.values.map((t) => Padding(
@@ -538,12 +599,15 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
       );
 
   Widget _buildFab() => FloatingActionButton.extended(
-        onPressed: _openCreate,
+        onPressed: _tabController.index == 0 ? _openCreate : _openCreateDashWidget,
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.bg,
         elevation: 0,
-        label: const Text('New Widget',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        label: Text(
+            _tabController.index == 0
+                ? 'New Widget'
+                : 'New Dashboard Widget',
+            style: const TextStyle(fontWeight: FontWeight.w700)),
         icon: const Icon(Icons.add_rounded),
       );
 }

@@ -4,6 +4,62 @@ import '../theme/colors.dart';
 import '../models/dashboard_widget.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  SHARED UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Summarises a history entry value into a short displayable string.
+String summariseEntry(dynamic value) {
+  if (value is Map) {
+    final m = Map<String, dynamic>.from(value);
+    if (m.containsKey('value')) {
+      final v = m['value'];
+      if (m.containsKey('trend')) {
+        final trend = m['trend']?.toString() ?? '';
+        final icon =
+            trend == 'up' ? '\u2191' : trend == 'down' ? '\u2193' : '\u2192';
+        return '$v $icon';
+      }
+      if (m.containsKey('unit')) {
+        return '$v ${m['unit']}';
+      }
+      if (m.containsKey('item')) {
+        return '${m['item']}: \$$v (x${m['purchases'] ?? 0})';
+      }
+      if (m.containsKey('low') ||
+          m.containsKey('critical') ||
+          m.containsKey('resolved')) {
+        return '$v total | L:${m['low'] ?? 0} C:${m['critical'] ?? 0} R:${m['resolved'] ?? 0}';
+      }
+      return '$v';
+    }
+    if (m.containsKey('values')) {
+      return 'Values: ${(m['values'] as List?)?.join(', ') ?? ''}';
+    }
+    if (m.containsKey('leaders')) {
+      final leaders = m['leaders'] as List? ?? [];
+      return leaders
+          .take(2)
+          .map((l) => '${l['name']} ${l['score']}')
+          .join(' | ');
+    }
+    if (m.containsKey('metrics')) {
+      final metrics = m['metrics'] as List? ?? [];
+      return metrics
+          .take(2)
+          .map((mt) => '${mt['title']}: ${mt['value']}')
+          .join(', ');
+    }
+  }
+  if (value is List) {
+    return value
+        .take(3)
+        .map((v) => '${v['name']}: ${v['value']}')
+        .join(' | ');
+  }
+  return value.toString();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  SHARED SHEET SHELL
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -232,6 +288,52 @@ class TypeTile extends StatelessWidget {
               Text(type.label,
                   style: TextStyle(
                       color: selected ? type.color : AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      );
+}
+
+class CategoryTile extends StatelessWidget {
+  const CategoryTile({
+    super.key,
+    required this.category,
+    required this.selected,
+    required this.onTap,
+  });
+  final DashboardCategory category;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: selected
+                ? category.color.withOpacity(0.15)
+                : AppColors.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: selected ? category.color : AppColors.border,
+                width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(category.icon,
+                  color:
+                      selected ? category.color : AppColors.textSecondary,
+                  size: 16),
+              const SizedBox(width: 8),
+              Text(category.label,
+                  style: TextStyle(
+                      color: selected
+                          ? category.color
+                          : AppColors.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w700)),
             ],
