@@ -32,7 +32,7 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
   bool _reorderMode = false;
-  late AnimationController _ctrl;
+  late TabController _tabController;
 
   @override
   void initState() {
@@ -41,9 +41,12 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
         .map(DashboardWidget.fromJson)
         .toList()
       ..sort((a, b) => a.position.compareTo(b.position));
-    _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500))
-      ..forward();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
     _searchCtrl.addListener(() {
       setState(() => _searchQuery = _searchCtrl.text.toLowerCase().trim());
     });
@@ -51,13 +54,22 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _tabController.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  List<DashboardWidget> get _historyWidgets =>
+      _widgets.where((w) => !w.isDashWidget).toList();
+
+  List<DashboardWidget> get _dashboardWidgets =>
+      _widgets.where((w) => w.isDashWidget).toList();
+
+  List<DashboardWidget> get _activeWidgets =>
+      _tabController.index == 0 ? _historyWidgets : _dashboardWidgets;
+
   List<DashboardWidget> get _filtered {
-    var list = _widgets.toList();
+    var list = _activeWidgets;
 
     // Apply type filter
     if (_filterType != null) {
@@ -294,6 +306,20 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
             tooltip: _reorderMode ? 'Done reordering' : 'Reorder',
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.accent,
+          labelColor: AppColors.accent,
+          unselectedLabelColor: AppColors.textSecondary,
+          labelStyle: const TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w700),
+          unselectedLabelStyle: const TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w600),
+          tabs: const [
+            Tab(text: 'History Widgets'),
+            Tab(text: 'Dashboard Widgets'),
+          ],
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -369,8 +395,9 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
       );
 
   Widget _buildStats() {
+    final activeList = _activeWidgets;
     final counts = <WidgetType, int>{};
-    for (final w in _widgets) {
+    for (final w in activeList) {
       counts[w.type] = (counts[w.type] ?? 0) + 1;
     }
     return Padding(
@@ -381,7 +408,7 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
           children: [
             MiniStat(
                 label: 'Total',
-                value: _widgets.length.toString(),
+                value: activeList.length.toString(),
                 color: AppColors.accent),
             const SizedBox(width: 8),
             ...WidgetType.values.map((t) => Padding(
@@ -542,8 +569,11 @@ class _WidgetAdminScreenState extends State<WidgetAdminScreen>
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.bg,
         elevation: 0,
-        label: const Text('New Widget',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        label: Text(
+            _tabController.index == 0
+                ? 'New Widget'
+                : 'New Dashboard Widget',
+            style: const TextStyle(fontWeight: FontWeight.w700)),
         icon: const Icon(Icons.add_rounded),
       );
 }

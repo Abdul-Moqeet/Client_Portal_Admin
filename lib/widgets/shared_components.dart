@@ -240,6 +240,52 @@ class TypeTile extends StatelessWidget {
       );
 }
 
+class CategoryTile extends StatelessWidget {
+  const CategoryTile({
+    super.key,
+    required this.category,
+    required this.selected,
+    required this.onTap,
+  });
+  final DashboardCategory category;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: selected
+                ? category.color.withOpacity(0.15)
+                : AppColors.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: selected ? category.color : AppColors.border,
+                width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(category.icon,
+                  color:
+                      selected ? category.color : AppColors.textSecondary,
+                  size: 16),
+              const SizedBox(width: 8),
+              Text(category.label,
+                  style: TextStyle(
+                      color: selected
+                          ? category.color
+                          : AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      );
+}
+
 class SheetLabel extends StatelessWidget {
   const SheetLabel(this.text, {super.key});
   final String text;
