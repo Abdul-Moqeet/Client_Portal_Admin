@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/app_links-primary.dia",
+    "emit-module-dependencies" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/app_links-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/app_links-primary-emit-module.dia",
+    "pch" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/app_links-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/app_links-primary.swiftdeps"
+  },
+  "/Users/abdulmoqeet/.pub-cache/hosted/pub.dev/app_links-6.4.1/macos/app_links/Sources/app_links/AppLinksMacosPlugin.swift" : {
+    "const-values" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/AppLinksMacosPlugin.swiftconstvalues",
+    "dependencies" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/AppLinksMacosPlugin.d",
+    "diagnostics" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/AppLinksMacosPlugin.dia",
+    "index-unit-output-path" : "/Pods.build/Debug/app_links.build/Objects-normal/arm64/AppLinksMacosPlugin.o",
+    "llvm-bc" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/AppLinksMacosPlugin.bc",
+    "object" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/AppLinksMacosPlugin.o",
+    "swift-dependencies" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/AppLinksMacosPlugin.swiftdeps",
+    "swiftmodule" : "/Users/abdulmoqeet/Desktop/Client portal/client_portal_admin/build/macos/Build/Intermediates.noindex/Pods.build/Debug/app_links.build/Objects-normal/arm64/AppLinksMacosPlugin~partial.swiftmodule"
+  }
+}
