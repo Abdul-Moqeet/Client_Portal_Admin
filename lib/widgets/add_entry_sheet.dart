@@ -25,9 +25,14 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
 
   // KPI
   final _kpiValueCtrl = TextEditingController();
-  final _kpiChangeCtrl = TextEditingController();
-  final _kpiPrefixCtrl = TextEditingController();
-  bool _kpiTrendUp = true;
+  String _kpiVariant = 'trend';
+  String _kpiTrend = 'up';
+  final _kpiUnitCtrl = TextEditingController();
+  final _kpiItemCtrl = TextEditingController();
+  final _kpiPurchasesCtrl = TextEditingController();
+  final _kpiLowCtrl = TextEditingController();
+  final _kpiCriticalCtrl = TextEditingController();
+  final _kpiResolvedCtrl = TextEditingController();
 
   // Chart
   final _chartLabelsCtrl =
@@ -52,8 +57,12 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   void dispose() {
     _dateCtrl.dispose();
     _kpiValueCtrl.dispose();
-    _kpiChangeCtrl.dispose();
-    _kpiPrefixCtrl.dispose();
+    _kpiUnitCtrl.dispose();
+    _kpiItemCtrl.dispose();
+    _kpiPurchasesCtrl.dispose();
+    _kpiLowCtrl.dispose();
+    _kpiCriticalCtrl.dispose();
+    _kpiResolvedCtrl.dispose();
     _chartLabelsCtrl.dispose();
     _chartValuesCtrl.dispose();
     for (final c in [
@@ -103,13 +112,38 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
       } else {
         switch (widget.dashboardWidget.type) {
           case WidgetType.kpi:
-            entry = {
-              'trend': _kpiTrendUp ? 'up' : 'down',
-              'value': num.tryParse(_kpiValueCtrl.text.trim()) ?? 0,
-              'change': num.tryParse(_kpiChangeCtrl.text.trim()) ?? 0,
-              if (_kpiPrefixCtrl.text.trim().isNotEmpty)
-                'prefix': _kpiPrefixCtrl.text.trim(),
-            };
+            final rawValue = _kpiValueCtrl.text.trim();
+            final numValue = num.tryParse(rawValue);
+            switch (_kpiVariant) {
+              case 'trend':
+                entry = {
+                  'value': numValue ?? rawValue,
+                  'trend': _kpiTrend,
+                };
+              case 'unit':
+                entry = {
+                  'value': numValue ?? rawValue,
+                  'unit': _kpiUnitCtrl.text.trim(),
+                };
+              case 'item':
+                entry = {
+                  'value': numValue ?? rawValue,
+                  'item': _kpiItemCtrl.text.trim(),
+                  'purchases':
+                      num.tryParse(_kpiPurchasesCtrl.text.trim()) ?? 0,
+                };
+              case 'tickets':
+                entry = {
+                  'value': numValue ?? rawValue,
+                  'low': num.tryParse(_kpiLowCtrl.text.trim()) ?? 0,
+                  'critical':
+                      num.tryParse(_kpiCriticalCtrl.text.trim()) ?? 0,
+                  'resolved':
+                      num.tryParse(_kpiResolvedCtrl.text.trim()) ?? 0,
+                };
+              default:
+                entry = {'value': numValue ?? rawValue};
+            }
 
           case WidgetType.chart:
             entry = {
@@ -230,56 +264,25 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
           const SizedBox(height: 8),
           SheetField(
               controller: _kpiValueCtrl,
-              hint: 'e.g. 1250',
+              hint: 'e.g. 168.04',
               icon: Icons.numbers_rounded,
-              keyboardType: TextInputType.number),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true)),
           const SizedBox(height: 16),
-          Row(children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SheetLabel('Change %'),
-                  const SizedBox(height: 8),
-                  SheetField(
-                      controller: _kpiChangeCtrl,
-                      hint: 'e.g. 3.5',
-                      icon: Icons.percent_rounded,
-                      keyboardType: TextInputType.number),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SheetLabel('Prefix (opt.)'),
-                  const SizedBox(height: 8),
-                  SheetField(
-                      controller: _kpiPrefixCtrl,
-                      hint: r'e.g. $',
-                      icon: Icons.attach_money_rounded),
-                ],
-              ),
-            ),
-          ]),
-          const SizedBox(height: 16),
-          const SheetLabel('Trend'),
+          const SheetLabel('KPI Variant'),
           const SizedBox(height: 8),
-          Row(children: [
-            TrendButton(
-                label: 'Up',
-                selected: _kpiTrendUp,
-                color: AppColors.success,
-                onTap: () => setState(() => _kpiTrendUp = true)),
-            const SizedBox(width: 10),
-            TrendButton(
-                label: 'Down',
-                selected: !_kpiTrendUp,
-                color: AppColors.danger,
-                onTap: () => setState(() => _kpiTrendUp = false)),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildVariantChip('Trend', 'trend'),
+              _buildVariantChip('Unit', 'unit'),
+              _buildVariantChip('Item', 'item'),
+              _buildVariantChip('Tickets', 'tickets'),
+              _buildVariantChip('None', 'none'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ..._buildKpiVariantFields(),
         ];
 
       case WidgetType.chart:
@@ -417,6 +420,134 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
           const Text('Leaders are auto-sorted by score on save.',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
         ];
+    }
+  }
+
+  Widget _buildVariantChip(String label, String variant) {
+    final selected = _kpiVariant == variant;
+    return GestureDetector(
+      onTap: () => setState(() => _kpiVariant = variant),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.accent.withOpacity(0.15) : AppColors.card,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? AppColors.accent.withOpacity(0.5) : AppColors.border,
+          ),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: selected ? AppColors.accent : AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  List<Widget> _buildKpiVariantFields() {
+    switch (_kpiVariant) {
+      case 'trend':
+        return [
+          const SheetLabel('Trend'),
+          const SizedBox(height: 8),
+          Row(children: [
+            TrendButton(
+                label: 'Up',
+                selected: _kpiTrend == 'up',
+                color: AppColors.success,
+                onTap: () => setState(() => _kpiTrend = 'up')),
+            const SizedBox(width: 10),
+            TrendButton(
+                label: 'Down',
+                selected: _kpiTrend == 'down',
+                color: AppColors.danger,
+                onTap: () => setState(() => _kpiTrend = 'down')),
+            const SizedBox(width: 10),
+            TrendButton(
+                label: 'Stable',
+                selected: _kpiTrend == 'stable',
+                color: AppColors.textSecondary,
+                onTap: () => setState(() => _kpiTrend = 'stable')),
+          ]),
+        ];
+      case 'unit':
+        return [
+          const SheetLabel('Unit'),
+          const SizedBox(height: 8),
+          SheetField(
+              controller: _kpiUnitCtrl,
+              hint: 'e.g. mins, hrs, %',
+              icon: Icons.straighten_rounded),
+        ];
+      case 'item':
+        return [
+          const SheetLabel('Item'),
+          const SizedBox(height: 8),
+          SheetField(
+              controller: _kpiItemCtrl,
+              hint: 'e.g. Monthly Subscription',
+              icon: Icons.shopping_bag_rounded),
+          const SizedBox(height: 10),
+          const SheetLabel('Purchases'),
+          const SizedBox(height: 8),
+          SheetField(
+              controller: _kpiPurchasesCtrl,
+              hint: 'e.g. 3',
+              icon: Icons.shopping_cart_rounded,
+              keyboardType: TextInputType.number),
+        ];
+      case 'tickets':
+        return [
+          Row(children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SheetLabel('Low'),
+                  const SizedBox(height: 8),
+                  SheetField(
+                      controller: _kpiLowCtrl,
+                      hint: '0',
+                      icon: Icons.arrow_downward_rounded,
+                      keyboardType: TextInputType.number),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SheetLabel('Critical'),
+                  const SizedBox(height: 8),
+                  SheetField(
+                      controller: _kpiCriticalCtrl,
+                      hint: '0',
+                      icon: Icons.warning_rounded,
+                      keyboardType: TextInputType.number),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SheetLabel('Resolved'),
+                  const SizedBox(height: 8),
+                  SheetField(
+                      controller: _kpiResolvedCtrl,
+                      hint: '0',
+                      icon: Icons.check_circle_rounded,
+                      keyboardType: TextInputType.number),
+                ],
+              ),
+            ),
+          ]),
+        ];
+      default:
+        return [];
     }
   }
 
