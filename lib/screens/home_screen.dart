@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/dashboard_widget.dart';
 import '../theme/colors.dart';
+import 'alerts_admin_screen.dart';
 import 'widget_admin_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -194,6 +195,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Manage Widgets card
           _buildManageCard(),
+          const SizedBox(height: 16),
+
+          // Manage Alerts card
+          _buildManageAlertsCard(),
           const SizedBox(height: 24),
 
           // Recent activity
@@ -335,6 +340,65 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const Icon(Icons.arrow_forward_ios_rounded,
                   color: AppColors.accent, size: 16),
+            ],
+          ),
+        ),
+      );
+
+  Widget _buildManageAlertsCard() => GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AlertsAdminScreen(),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.danger.withOpacity(0.15),
+                AppColors.danger.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.notifications_active_rounded,
+                    color: AppColors.danger, size: 24),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Manage Alerts',
+                        style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700)),
+                    SizedBox(height: 4),
+                    Text('Create, edit, and manage system alerts & actions',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 12)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  color: AppColors.danger, size: 16),
             ],
           ),
         ),
