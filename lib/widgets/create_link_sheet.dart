@@ -49,7 +49,7 @@ class _CreateLinkSheetState extends State<CreateLinkSheet> {
             'url': _urlCtrl.text.trim(),
             'icon_name': _iconName,
             'organisation_id': _organisationId,
-            'position': 0,
+            'position': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           })
           .select()
           .single();

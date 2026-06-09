@@ -58,7 +58,7 @@ class _CreateAlertSheetState extends State<CreateAlertSheet> {
             'has_action': _hasAction,
             'action_label': _hasAction ? _actionLabelCtrl.text.trim() : null,
             'organisation_id': _organisationId,
-            'position': 0,
+            'position': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           })
           .select()
           .single();
