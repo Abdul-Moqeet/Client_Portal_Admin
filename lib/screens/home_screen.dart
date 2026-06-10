@@ -5,6 +5,7 @@ import '../models/dashboard_widget.dart';
 import '../theme/colors.dart';
 import 'alerts_admin_screen.dart';
 import 'links_admin_screen.dart';
+import 'tickets_admin_screen.dart';
 import 'widget_admin_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -204,6 +205,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Manage External Links card
           _buildManageLinksCard(),
+          const SizedBox(height: 16),
+
+          // Manage Tickets card
+          _buildManageTicketsCard(),
           const SizedBox(height: 24),
 
           // Recent activity
@@ -463,6 +468,65 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const Icon(Icons.arrow_forward_ios_rounded,
                   color: AppColors.accent, size: 16),
+            ],
+          ),
+        ),
+      );
+
+  Widget _buildManageTicketsCard() => GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TicketsAdminScreen(),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.success.withOpacity(0.15),
+                AppColors.success.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.success.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.confirmation_num_rounded,
+                    color: AppColors.success, size: 24),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Manage Tickets',
+                        style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700)),
+                    SizedBox(height: 4),
+                    Text('View and respond to support tickets',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 12)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  color: AppColors.success, size: 16),
             ],
           ),
         ),
